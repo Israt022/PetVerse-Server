@@ -32,6 +32,13 @@ async function run() {
     const db = client.db("petversedb");
     const petsCollection = db.collection("pets");
 
+    // get feature data
+    app.get('/features',async(req,res)=>{
+        const cursor = petsCollection.find().limit(6);
+        const result = await cursor.toArray();
+
+        res.json(result);
+    })
     // get pets data
     app.get('/pets',async(req,res)=>{
         const cursor = petsCollection.find();
