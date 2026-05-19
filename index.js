@@ -11,8 +11,12 @@ const port = process.env.PORT || 8080
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 const uri = process.env.MONGODB_URI;
-
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
+)
+// console.log(JWKS);
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -21,6 +25,25 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+
+const verifyToken = async(req,res,next) =>{
+  const {authorization} = req.headers;
+  const token = authorization?.split(" ")[1];
+  
+  if(!token){
+    return res.status(401).json({message : "Unauthorized"})
+  }
+   try {
+    const { payload } = await jwtVerify(token, JWKS)
+    req.user = payload;
+
+    next();
+  } catch (error) {
+    console.error('Token validation failed:', error)
+    return res.status(401).json({message : "Unauthorized"})
+  }
+  
+}
 
 async function run() {
   try {
@@ -47,7 +70,8 @@ async function run() {
         res.json(result);
     })
     // get pets data by ID
-    app.get('/pets/:petId',async(req,res)=>{
+    app.get('/pets/:petId',verifyToken,async(req,res)=>{
+      console.log(req.user);
         const {petId} = req.params;
         const query = {_id : new ObjectId(petId)}
         const result = await petsCollection.findOne(query);
