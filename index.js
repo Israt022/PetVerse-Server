@@ -64,10 +64,41 @@ async function run() {
     })
     // get pets data
     app.get('/pets',async(req,res)=>{
-        const cursor = petsCollection.find();
-        const result = await cursor.toArray();
+      const {search,category,sort} = req.query;
+      let cursor;
+      let query = {};
+      // search
+      if(search){
+          query.petName = {
+            $regex : search,
+            $options : 'i',
+          };
+      }
+      // Filter
+      if(category){
+          query.species = {
+              $regex: `^${category}$`,
+              $options: "i",
+          };
+      }
+      // Find
+      cursor = petsCollection.find(query);
+      // sort
+      if(sort === "low"){
+        cursor = cursor.sort({
+          adoptionFee : 1
+        });
+      }
+      if(sort === "high"){
+        cursor = cursor.sort({
+          adoptionFee : -1
+        });
+      }
+      console.log(search);
+      const result = await cursor.toArray();
 
-        res.json(result);
+      res.json(result);
+      console.log(result);
     })
     // get pets data by ID
     app.get('/pets/:petId',verifyToken,async(req,res)=>{
