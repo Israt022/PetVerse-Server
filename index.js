@@ -166,6 +166,16 @@ async function run() {
         createdAt: new Date()
       })
 
+      // update pet status to pending
+      await petsCollection.updateOne(
+        { _id: new ObjectId(adoptionData.petId) },
+        {
+          $set: {
+            adoptionStatus: "pending",
+          },
+        }
+      );
+
       res.json(result);
     })
 
@@ -176,6 +186,59 @@ async function run() {
 
       res.json(result);
     })
+
+    // adoption request get 
+    // get requests by pet id
+    app.get('/adoption-request/:petId', async (req, res) => {
+      const { petId } = req.params;
+
+      const result = await adoptionCollection
+        .find({ petId: petId })
+        .toArray();
+
+      res.json(result);
+    });
+
+    // test 
+    app.patch('/adoption/:id', async (req, res) => {
+      const { id } = req.params;
+      const { status, petId } = req.body;
+
+      // update adoption request
+      const result = await adoptionCollection.updateOne(
+        { _id: new ObjectId(id) },
+        {
+          $set: { status },
+        }
+      );
+
+      // update pet status
+      if (status === "approved") {
+        await petsCollection.updateOne(
+          { _id: new ObjectId(petId) },
+          {
+            $set: {
+              adoptionStatus: "adopted",
+              adopted: true,
+            },
+          }
+        );
+      }
+
+      if (status === "rejected") {
+        await petsCollection.updateOne(
+          { _id: new ObjectId(petId) },
+          {
+            $set: {
+              adoptionStatus: "available",
+              adopted: false,
+            },
+          }
+        );
+      }
+
+      res.json(result);
+    });
 
     // get my pet list 
     app.get('/my-pets/:email',verifyToken, async (req, res) => {
