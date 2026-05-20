@@ -56,6 +56,7 @@ async function run() {
 
     const db = client.db("petversedb");
     const petsCollection = db.collection("pets");
+    const adoptionCollection = db.collection("adoptions");
 
     // get feature data
     app.get('/features',async(req,res)=>{
@@ -119,9 +120,59 @@ async function run() {
       const newPet = {
         ...petData,
         adopted : false,
+        adoptionStatus: "available",
         createdAt : new Date(),
       }
       const result = await petsCollection.insertOne(newPet);
+
+      res.json(result);
+    })
+
+    // Patch pet 
+    app.patch('/pets/:id',async(req, res) => {
+      const {id} = req.params;
+      const updateData = req.body;
+      console.log(updateData);
+      const result = await petsCollection.updateOne(
+        {_id : new ObjectId(id)},
+        {$set : updateData}
+      )
+
+      res.json(result)
+    })
+
+    // pet delete 
+    app.delete('/pets/:petId',async(req,res) =>{
+      const {petId} = req.params;
+      const result = await petsCollection.deleteOne({_id : new ObjectId(petId)})
+
+      res.json(result);
+    })
+
+    // adoption get 
+    app.get('/adoption/:userId',verifyToken,async(req,res) =>{
+      const {userId} = req.params;
+      console.log(userId);
+      const result = await adoptionCollection.find({userId : userId}).toArray()
+
+      res.json(result);
+    })
+    // adoption post 
+    app.post('/adoption',verifyToken,async(req,res) =>{
+      const adoptionData = req.body;
+      const result = await adoptionCollection.insertOne({
+        ...adoptionData,
+        status: "pending",
+        createdAt: new Date()
+      })
+
+      res.json(result);
+    })
+
+    // adoption delete 
+    app.delete('/adoption/:adoptionId',async(req,res) =>{
+      const {adoptionId} = req.params;
+      const result = await adoptionCollection.deleteOne({_id : new ObjectId(adoptionId)})
 
       res.json(result);
     })
