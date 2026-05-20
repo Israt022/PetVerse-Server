@@ -7,6 +7,7 @@ const cors = require('cors')
 dotenv.config()
 const app = express()
 app.use(cors())
+app.use(express.json())
 const port = process.env.PORT || 8080
 
 
@@ -29,7 +30,8 @@ const client = new MongoClient(uri, {
 const verifyToken = async(req,res,next) =>{
   const {authorization} = req.headers;
   const token = authorization?.split(" ")[1];
-  
+  // console.log("AUTH HEADER:", req.headers.authorization);
+  // console.log("TOKEN:", token);
   if(!token){
     return res.status(401).json({message : "Unauthorized"})
   }
@@ -94,12 +96,13 @@ async function run() {
           adoptionFee : -1
         });
       }
-      console.log(search);
+      // console.log(search);
       const result = await cursor.toArray();
 
       res.json(result);
-      console.log(result);
+      // console.log(result);
     })
+    
     // get pets data by ID
     app.get('/pets/:petId',verifyToken,async(req,res)=>{
       console.log(req.user);
@@ -109,6 +112,32 @@ async function run() {
 
         res.json(result);
     })
+
+    // Post pets
+    app.post('/pets',async(req,res)=>{
+      const petData = req.body;
+      const newPet = {
+        ...petData,
+        adopted : false,
+        createdAt : new Date(),
+      }
+      const result = await petsCollection.insertOne(newPet);
+
+      res.json(result);
+    })
+
+    // get my pet list 
+    app.get('/my-pets/:email',verifyToken, async (req, res) => {
+      const {email} = req.params;
+      //  const email = req.user.email; 
+
+      // console.log("email->",email);
+      const result = await petsCollection.find({
+        ownerEmail: email
+      }).toArray();
+
+      res.json(result);
+    });
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
