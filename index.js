@@ -78,10 +78,19 @@ async function run() {
           };
       }
       // Filter
-      if(category){
+      // if(category){
+      //     query.species = {
+      //         $regex: `^${category}$`,
+      //         $options: "i",
+      //     };
+      // }
+      // test 
+      if (category) {
+
+          const categories = category.split(",");
+
           query.species = {
-              $regex: `^${category}$`,
-              $options: "i",
+              $in: categories.map(cat => new RegExp(`^${cat}$`, "i"))
           };
       }
       // Find
